@@ -1,0 +1,39 @@
+name: Deploy FastAPI App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Deploy to VM via SSH
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 22
+        script_stop: true
+        debug: true
+        script: |
+          cd ~/Sinhala-text-cleaner-for-ASR-Chatbot-for-Caller-center
+
+          git pull origin main
+
+          docker stop text-cleaner || true
+          docker rm text-cleaner || true
+
+          docker build -t text-cleaner .
+
+          docker run -d \
+            -p 8000:8000 \
+            --env-file .env \
+            --name text-cleaner \
+            text-cleaner
