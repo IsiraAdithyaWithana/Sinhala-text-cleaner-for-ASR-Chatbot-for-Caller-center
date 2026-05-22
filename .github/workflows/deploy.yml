@@ -13,6 +13,12 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
+    - name: Check SSH connectivity from runner
+      run: |
+        echo "Checking SSH connectivity to ${{ secrets.HOST }}:22"
+        nc -vz ${{ secrets.HOST }} 22 || true
+        ssh-keyscan -p 22 ${{ secrets.HOST }} || true
+
     - name: Deploy to VM via SSH
       uses: appleboy/ssh-action@v1.0.3
       with:
