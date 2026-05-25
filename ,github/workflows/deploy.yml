@@ -1,4 +1,4 @@
-name: Deploy Python App
+\name: Deploy Python App
 
 on:
   push:
@@ -13,6 +13,11 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Show project structure
+        run: |
+          ls
+          find . -name "text_cleaner.py"
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -22,9 +27,9 @@ jobs:
         run: |
           pip install -r "Gemini Text Cleaner/requirements.txt"
 
-      - name: Test Python files
+      - name: Test Python file
         run: |
-          python -m py_compile "Text_Cleaner_Batch_Processing/text_cleaner.py"
+          python -m py_compile "text_cleaner.py"
 
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1.0.3
@@ -38,4 +43,4 @@ jobs:
             git pull origin main
             pip install -r "Gemini Text Cleaner/requirements.txt"
             pkill -f "text_cleaner.py" || true
-            nohup python "Text_Cleaner_Batch_Processing/text_cleaner.py" > app.log 2>&1 &
+            nohup python "text_cleaner.py" > app.log 2>&1 &
