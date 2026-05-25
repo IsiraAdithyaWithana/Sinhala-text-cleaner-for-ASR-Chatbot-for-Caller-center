@@ -1,4 +1,4 @@
-\name: Deploy Python App
+name: Deploy Python App
 
 on:
   push:
@@ -12,11 +12,6 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-
-      - name: Show project structure
-        run: |
-          ls
-          find . -name "text_cleaner.py"
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -43,4 +38,4 @@ jobs:
             git pull origin main
             pip install -r "Gemini Text Cleaner/requirements.txt"
             pkill -f "text_cleaner.py" || true
-            nohup python "text_cleaner.py" > app.log 2>&1 &
+            nohup python text_cleaner.py > app.log 2>&1 &
