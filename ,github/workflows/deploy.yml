@@ -24,7 +24,7 @@ jobs:
 
       - name: Test Python files
         run: |
-          python -m py_compile "Gemini Text Cleaner/Text_Cleaner_Batch_Process/text_cleaner.py"
+          python -m py_compile "Text_Cleaner_Batch_Processing/text_cleaner.py"
 
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1.0.3
@@ -38,4 +38,4 @@ jobs:
             git pull origin main
             pip install -r "Gemini Text Cleaner/requirements.txt"
             pkill -f "text_cleaner.py" || true
-            nohup python "Gemini Text Cleaner/Text_Cleaner_Batch_Process/text_cleaner.py" > app.log 2>&1 &
+            nohup python "Text_Cleaner_Batch_Processing/text_cleaner.py" > app.log 2>&1 &
