@@ -15,9 +15,9 @@ jobs:
 
     - name: Check SSH connectivity from runner
       run: |
-        echo "Checking SSH connectivity to ${{ secrets.HOST }}:22"
-        nc -vz ${{ secrets.HOST }} 22 || true
-        ssh-keyscan -p 22 ${{ secrets.HOST }} || true
+        echo "Checking SSH connectivity to ${{ secrets.HOST }}:3136"
+        nc -vz ${{ secrets.HOST }} 3136 || true
+        ssh-keyscan -p 3136 ${{ secrets.HOST }} || true
 
     - name: Runner SSH debug attempt
       env:
@@ -25,13 +25,22 @@ jobs:
         USERNAME: ${{ secrets.USERNAME }}
         SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       run: |
-        echo "Writing SSH key to /tmp/gha_key (will be masked in logs)"
+        echo "Writing SSH key to /tmp/gha_key"
         mkdir -p /tmp
+
         echo "$SSH_KEY" > /tmp/gha_key
         chmod 600 /tmp/gha_key
-        echo "Attempting SSH connect to $HOST (10s timeout)"
-        ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 -i /tmp/gha_key $USERNAME@$HOST 'echo SSH_OK' || true
-        echo "SSH attempt finished with exit code $?"
+
+        echo "Attempting SSH connect to $HOST:3136"
+
+        ssh -p 3136 \
+          -o StrictHostKeyChecking=no \
+          -o BatchMode=yes \
+          -o ConnectTimeout=10 \
+          -i /tmp/gha_key \
+          $USERNAME@$HOST 'echo SSH_OK' || true
+
+        echo "SSH attempt finished"
 
     - name: Deploy to VM via SSH
       uses: appleboy/ssh-action@v1.0.3
