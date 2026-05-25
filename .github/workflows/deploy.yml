@@ -13,6 +13,11 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Show files
+        run: |
+          ls
+          find . -name "text_cleaner.py"
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -22,9 +27,9 @@ jobs:
         run: |
           pip install -r "Gemini Text Cleaner/requirements.txt"
 
-      - name: Test Python files
+      - name: Test Python file
         run: |
-          python -m py_compile "Gemini Text Cleaner/Text_Cleaner_Batch_Process/text_cleaner.py"
+          python -m py_compile "text_cleaner.py"
 
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1.0.3
@@ -35,7 +40,9 @@ jobs:
           port: 3136
           script: |
             cd /home/dpd/Sinhala-text-cleaner-for-ASR-Chatbot-for-Caller-center
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
+            git clean -fd
             pip install -r "Gemini Text Cleaner/requirements.txt"
             pkill -f "text_cleaner.py" || true
-            nohup python "Gemini Text Cleaner/Text_Cleaner_Batch_Process/text_cleaner.py" > app.log 2>&1 &
+            nohup python text_cleaner.py > app.log 2>&1 &
