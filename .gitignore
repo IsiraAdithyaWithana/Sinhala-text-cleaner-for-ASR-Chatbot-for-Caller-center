@@ -1,0 +1,30 @@
+# ── Batch processing folders ──────────────────────────
+input_audios/*.txt
+cleaned_outputs/*.txt
+processed_archive/*.txt
+
+# Keep the folders themselves in Git (empty folders are ignored by Git)
+!input_audios/.gitkeep
+!cleaned_outputs/.gitkeep
+!processed_archive/.gitkeep
+
+# ── Logs ──────────────────────────────────────────────
+*.log
+process.log
+api_process.log
+
+# ── Python ────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# ── Environment ───────────────────────────────────────
+.env
+venv/
+env/
+
+# ── OS ────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
