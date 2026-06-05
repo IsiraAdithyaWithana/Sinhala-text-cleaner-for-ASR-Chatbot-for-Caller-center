@@ -1,5 +1,4 @@
 # ── Batch processing folders ──────────────────────────
-input_audios/*.txt
 cleaned_outputs/*.txt
 processed_archive/*.txt
 

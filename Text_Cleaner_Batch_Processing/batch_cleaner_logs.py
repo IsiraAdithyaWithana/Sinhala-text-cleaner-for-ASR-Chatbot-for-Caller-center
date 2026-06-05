@@ -1,43 +1,97 @@
+import subprocess
 import sys
 import os
-import time
-import glob
-import logging
-import shutil
 
-# Installing google genai if missing
+# ─────────────────────────────────────────────────────────────────
+# STEP 1 — Auto-install dependencies if missing
+# ─────────────────────────────────────────────────────────────────
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", package])
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    print("📦 Installing python-dotenv...")
+    install("python-dotenv")
+    from dotenv import load_dotenv
+
 try:
     from google import genai
 except ImportError:
-    print("Installing google-genai...")
-    os.system(f"{sys.executable} -m pip install -q google-genai")
+    print("📦 Installing google-genai...")
+    install("google-genai")
     from google import genai
 
-# Fix Windows terminal UTF-8 encoding
+# ─────────────────────────────────────────────────────────────────
+# STEP 2 — Fix Windows terminal UTF-8 encoding
+# ─────────────────────────────────────────────────────────────────
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
     os.system("chcp 65001 > nul")
 
 # ─────────────────────────────────────────────────────────────────
-# LOGGING CONFIGURATION
+# STEP 3 — Auto-create .env if missing, validate API key
 # ─────────────────────────────────────────────────────────────────
+ENV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+PLACEHOLDER = "YOUR_API_KEY_HERE"
+
+if not os.path.exists(ENV_FILE):
+    with open(ENV_FILE, "w") as f:
+        f.write(f"GEMINI_API_KEY={PLACEHOLDER}\n")
+    print("\n" + "=" * 55)
+    print("  ✅ .env file created successfully!")
+    print("=" * 55)
+    print(f"\n  📂 Location: {ENV_FILE}")
+    print("\n  👉 Open the .env file and replace:")
+    print(f"     GEMINI_API_KEY={PLACEHOLDER}")
+    print("     with your real Gemini API key.")
+    print("\n  Then run this script again. ✅")
+    print("=" * 55 + "\n")
+    sys.exit(0)
+
+# Load the .env file
+load_dotenv(ENV_FILE)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+
+if not GEMINI_API_KEY or GEMINI_API_KEY == PLACEHOLDER:
+    print("\n" + "=" * 55)
+    print("  ⚠️  API key not set!")
+    print("=" * 55)
+    print(f"\n  📂 Open this file: {ENV_FILE}")
+    print("\n  👉 Replace:")
+    print(f"     GEMINI_API_KEY={PLACEHOLDER}")
+    print("     with your real Gemini API key.")
+    print("\n  Then run this script again. ✅")
+    print("=" * 55 + "\n")
+    sys.exit(0)
+
+# ─────────────────────────────────────────────────────────────────
+# STEP 4 — Logging & Settings
+# ─────────────────────────────────────────────────────────────────
+import time
+import glob
+import logging
+import shutil
+
+LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "process.log")
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s | %(levelname)-8s | %(message)s',
-    handlers=[logging.FileHandler("process.log", encoding="utf-8"), logging.StreamHandler(sys.stdout)]
+    handlers=[
+        logging.FileHandler(LOG_FILE, encoding="utf-8"),
+        logging.StreamHandler(sys.stdout)
+    ]
 )
 
-# ─────────────────────────────────────────────────────────────────
-# SETTINGS
-# ─────────────────────────────────────────────────────────────────
-GEMINI_API_KEY = "AIza....................." # REPLACE with your actual API key 
 SELECT_MODEL = "gemini-3-flash-preview"
 
-# Directory Structure
-INPUT_DIR = "input_audios"
-OUTPUT_DIR = "cleaned_outputs"
-ARCHIVE_DIR = "processed_archive" # NEW: Safe storage for raw files
+# Directory Structure — all relative to this script's location
+BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
+INPUT_DIR   = os.path.join(BASE_DIR, "input_audios")
+OUTPUT_DIR  = os.path.join(BASE_DIR, "cleaned_outputs")
+ARCHIVE_DIR = os.path.join(BASE_DIR, "processed_archive")
 
 # ─────────────────────────────────────────────────────────────────
 # PROMPT
@@ -77,7 +131,7 @@ def clean_text(noisy_text, model, api_key):
                 logging.warning(f"503 error — retrying in {wait}s...")
                 time.sleep(wait)
             else:
-                break 
+                break
 
     raise RuntimeError(f"Gemini API failure after retries: {last_error}")
 
@@ -85,9 +139,8 @@ def clean_text(noisy_text, model, api_key):
 # BATCH PROCESSING LOOP
 # ─────────────────────────────────────────────────────────────────
 def process_batch():
-    logging.info("=" * 55)
     logging.info(f"STARTING BATCH RUN | Model: {SELECT_MODEL}")
-    logging.info("=" * 55)
+    print()
 
     # Ensure all three directories exist
     os.makedirs(INPUT_DIR, exist_ok=True)
@@ -95,55 +148,49 @@ def process_batch():
     os.makedirs(ARCHIVE_DIR, exist_ok=True)
 
     input_files = glob.glob(os.path.join(INPUT_DIR, "*.txt"))
-    
+
     if not input_files:
-        logging.warning(f"No .txt files found in '{INPUT_DIR}/'. Waiting for ASR data.")
+        logging.warning(f"No .txt files found in 'input_audios/'. Please add files and run again.")
         return
 
-    logging.info(f"Found {len(input_files)} files to process.")
+    logging.info(f"Found {len(input_files)} file(s) to process.")
 
     success_count = 0
     fail_count = 0
 
     for file_path in input_files:
-        # Extract filename parts (e.g., "call123" and ".txt")
         filename = os.path.basename(file_path)
         name_only, extension = os.path.splitext(filename)
-        
-        # Create new filenames
+
         output_filename = f"{name_only}_cleaned{extension}"
         output_path = os.path.join(OUTPUT_DIR, output_filename)
         archive_path = os.path.join(ARCHIVE_DIR, filename)
-        
+
         logging.info(f"Processing: {filename}")
         t0 = time.time()
-        
+
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 noisy_text = f.read().strip()
-                
+
             if not noisy_text:
-                logging.warning(f"Skipped {filename} - File is empty.")
-                # Move empty files to archive so they don't clog the input
+                logging.warning(f"Skipped {filename} — file is empty.")
                 shutil.move(file_path, archive_path)
                 continue
 
-            # API Call
             cleaned_text = clean_text(noisy_text, SELECT_MODEL, GEMINI_API_KEY)
-            
-            # Save Output with new name
+
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(cleaned_text)
-                
-            # Move the original file to the archive folder
+
             shutil.move(file_path, archive_path)
-                
+
             elapsed = round(time.time() - t0, 1)
             logging.info(f"SUCCESS: -> {output_filename} ({elapsed}s)")
             success_count += 1
-            
+
         except Exception as e:
-            logging.error(f"FAILED: {filename} - Error: {e}")
+            logging.error(f"FAILED: {filename} — Error: {e}")
             fail_count += 1
 
     logging.info("-" * 55)
