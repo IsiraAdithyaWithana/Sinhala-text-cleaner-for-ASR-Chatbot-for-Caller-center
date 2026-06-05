@@ -1,11 +1,10 @@
 # ── Batch processing folders ──────────────────────────
-Text_Cleaner_Batch_Processing/cleaned_outputs/*.txt
-Text_Cleaner_Batch_Processing/processed_archive/*.txt
+Text_Cleaner_Batch_Processing/cleaned_outputs/
+Text_Cleaner_Batch_Processing/input_audios/
 
-# Keep the folders themselves in Git (empty folders are ignored by Git)
-!input_audios/.gitkeep
-!cleaned_outputs/.gitkeep
-!processed_archive/.gitkeep
+# Keep empty folders visible in Git
+Text_Cleaner_Batch_Processing/cleaned_outputs/.gitkeep
+Text_Cleaner_Batch_Processing/input_audios/.gitkeep
 
 # ── Logs ──────────────────────────────────────────────
 *.log
